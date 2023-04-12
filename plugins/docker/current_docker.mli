@@ -22,6 +22,7 @@ module Raw : sig
   module Image = Image
 
   val pull :
+    ?auth:string * string ->
     docker_context:string option ->
     schedule:Current_cache.Schedule.t ->
     ?arch:string -> string -> Image.t Current.Primitive.t

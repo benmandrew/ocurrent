@@ -19,6 +19,7 @@ module type DOCKER = sig
   val docker_context : string option
 
   val pull :
+    ?auth:string * string ->
     ?label:string ->
     ?arch:string ->
     schedule:Current_cache.Schedule.t ->

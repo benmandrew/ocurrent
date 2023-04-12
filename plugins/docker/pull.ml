@@ -1,6 +1,7 @@
 open Lwt.Infix
 
-type t = No_context
+(** Login authentication *)
+type t = (string * string) option
 
 let ( >>!= ) = Lwt_result.bind
 
@@ -37,7 +38,13 @@ let get_digest_from_manifest manifest arch =
         Fmt.exn ex
         (Yojson.Basic.pretty_print ~std:true) json
 
-let build No_context job key =
+let build auth job key =
+  begin match auth with
+    | None -> Lwt.return (Ok ())
+    | Some (user, password) ->
+      let cmd = Cmd.login ~docker_context:None user in
+      Current.Process.exec ~cancellable:true ~job ~stdin:password cmd
+  end >>!= fun () ->
   Current.Job.start job ~level:Current.Level.Mostly_harmless >>= fun () ->
   let { Key.docker_context; tag; arch } = key in
   match arch with

@@ -41,51 +41,10 @@ let render_row ~jobs ~need_toggles { Db.job_id; build; value = _; rebuild; ready
     tr cols
   )
 
-let bool_param name uri =
-  match Uri.get_query_param uri name with
-  | None | Some "" -> None
-  | Some "true" -> Some true
-  | Some "false" -> Some false
-  | Some x -> Fmt.failwith "Invalid bool value %S in %a" x Uri.pp uri
-
-let string_param name uri =
-  match Uri.get_query_param uri name with
-  | None | Some "" -> None
-  | Some x -> Some x
-
-let bool_table ~t ~f = [
-  None,       "",      "(any)";
-  Some true,  "true",  t;
-  Some false, "false", f;
-]
-
-let enum_option ~choices name (value:string option) =
-  let value = Option.value value ~default:"" in
-  let choices = "" :: choices in
-  select ~a:[a_name name] (
-    choices |> List.map (fun form_value ->
-        let sel = if form_value = value then [a_selected ()] else [] in
-        let label = if form_value = "" then "(any)" else form_value in
-        option ~a:(a_value form_value :: sel) (txt label)
-      )
-  )
-
-let bool_option ?(t="True") ?(f="False") name value =
-  select ~a:[a_name name] (
-    bool_table ~t ~f |> List.map (fun (v, form_value, label) ->
-        let sel = if v = value then [a_selected ()] else [] in
-        option ~a:(a_value form_value :: sel) (txt label)
-      )
-  )
-
-let string_option ~placeholder ~title name value =
-  let value = Option.value value ~default:"" in
-  input ~a:[a_name name; a_input_type `Text; a_value value; a_placeholder placeholder; a_title title] ()
-
 let date_tip = "Actually, any prefix of the job ID can be used here."
 
 let have_active_jobs ~jobs query_results =
-  List.exists (fun entry -> Current.Job.Map.mem entry.Current_cache.Db.job_id jobs) query_results
+  List.exists (fun entry -> Current.Job.Map.mem entry.Db.job_id jobs) query_results
 
 let r ~engine = object
   inherit Resource.t
@@ -95,10 +54,10 @@ let r ~engine = object
 
   method! private get ctx =
     let uri = Context.uri ctx in
-    let ok = bool_param "ok" uri in
-    let rebuild = bool_param "rebuild" uri in
-    let op = string_param "op" uri in
-    let date = string_param "date" uri in
+    let ok = Common.bool_param "ok" uri in
+    let rebuild = Common.bool_param "rebuild" uri in
+    let op = Common.string_param "op" uri in
+    let date = Common.string_param "date" uri in
     let results = Db.query ?op ?ok ?rebuild ?job_prefix:date () in
     let ops = Db.ops () in
     let jobs = (Current.Engine.state engine).jobs in
@@ -124,10 +83,10 @@ let r ~engine = object
     Context.respond_ok ctx [
       form ~a:[a_action "/query"; a_method `Get] [
         ul ~a:[a_class ["query-form"]] [
-            li [txt "Operation type:"; enum_option ~choices:ops "op" op];
-            li [txt "Result:"; bool_option "ok" ok ~t:"Passed" ~f:"Failed"];
-            li [txt "Needs rebuild:"; bool_option "rebuild" rebuild];
-            li [txt "Date:"; string_option "date" date ~placeholder:"YYYY-MM-DD" ~title:date_tip];
+            li [txt "Operation type:"; Common.enum_option ~choices:ops "op" op];
+            li [txt "Result:"; Common.bool_option "ok" ok ~t:"Passed" ~f:"Failed"];
+            li [txt "Needs rebuild:"; Common.bool_option "rebuild" rebuild];
+            li [txt "Date:"; Common.string_option "date" date ~placeholder:"YYYY-MM-DD" ~title:date_tip];
             li [input ~a:[a_input_type `Submit; a_value "Submit"] ()];
           ];
       ];

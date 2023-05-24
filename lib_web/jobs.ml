@@ -10,8 +10,8 @@ let running_param name uri =
   | Some "ready" -> Some false
   | Some x -> Fmt.failwith "Invalid value %S in %a: must be one of 'running' or 'ready'" x Uri.pp uri
 
-let render_row (id, job) =
-  let url = Fmt.str "/job/%s" id in
+let render_row (id, _job) =
+  (* let url = Fmt.str "/job/%s" id in
   let start_time =
     match Lwt.state (Job.start_time job) with
     | Lwt.Sleep -> "(ready to start)"
@@ -21,6 +21,10 @@ let render_row (id, job) =
   tr [
     td [ a ~a:[a_href url] [txt id] ];
     td [ txt start_time ];
+  ] *)
+  tr [
+    td [ a ~a:[a_href "URL"] [txt id] ];
+    td [ txt "At some point" ];
   ]
 
 let date_tip = "Actually, any prefix of the job ID can be used here."
@@ -45,7 +49,7 @@ let filter_jobs ?running ?op ?date (jobs : Job.t Job.Map.t) =
 
 let sort_jobs jobs =
   Job.Map.bindings jobs
-  |> List.sort (fun (id0, _) (id1, _) -> String.compare id0 id1) 
+  |> List.sort (fun (id0, _) (id1, _) -> String.compare id0 id1)
 
 let jobs_per_page = 3
 
@@ -61,19 +65,16 @@ let paginate_jobs page_idx jobs =
 
 let paging_buttons page_idx total_pages =
   let input ?(disabled = false) ?(selected_page = false) ?str_override page_idx =
-    let s = Option.value ~default:(string_of_int page_idx) str_override in
+    let i = string_of_int page_idx in
+    let s = Option.value ~default:i str_override in
     let a =
-      [a_input_type `Button; a_value s]
+      [a_button_type `Submit; a_name "page"; a_value i]
       @ if disabled then [a_disabled ()] else []
       @ if selected_page then [
           a_style "background-color: #EC7D0B; border-top-width: 0px; border-bottom-width: 0px"
         ] else []
     in
-    form [
-      (* <input type="hidden" id="custId" name="custId" value="3487">; *)
-      input ~a:[a_hidden (); a_name "page"; a_value (string_of_int page_idx)] (); 
-      input ~a ();
-    ]
+    button ~a:(Obj.magic a) [ txt s ];
   in
   let prefix =
     if page_idx = 1 then
@@ -145,9 +146,17 @@ let r = object
                   th [txt "Start time"];
                 ]])
               (List.map render_row jobs);
-              paging_buttons page n_pages;
             ]
           );
+        ]
+    in
+    let paging =
+      if jobs = [] then [ div [] ]
+      else
+        [
+          form ~a:[a_action "/jobs"; a_method `Get] [
+            paging_buttons page n_pages
+          ]
         ]
     in
     Context.respond_ok ctx ?refresh:ctx.site.refresh_pipeline (
@@ -160,7 +169,7 @@ let r = object
             li [input ~a:[a_input_type `Submit; a_value "Submit"] ()];
           ];
         ];
-      ] @ content)
+      ] @ content @ paging)
 
   method! nav_link = Some "Jobs"
 end

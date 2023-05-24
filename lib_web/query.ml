@@ -1,6 +1,7 @@
 open Tyxml.Html
 module Db = Current_cache.Db
 
+
 let render_value = function
   | Ok _ -> txt "OK"
   | Error (`Msg m) -> span ~a:[a_class ["error"]] [txt m]
@@ -74,12 +75,14 @@ let r ~engine = object
       th [txt "Rebuild?"];
       th [txt "Finished"];
       th [txt "Queue\u{202f}/\u{2009}run time"];
-    ] in
+    ]
+    in
     let headings =
       if need_toggles then
         let js = {|var e=document.getElementById('select-all'),c=document.getElementsByName('id');for(var i=0,n=c.length;i<n;i++)c[i].checked=e.checked|} in
         th [input ~a:[a_input_type `Checkbox; a_id "select-all"; a_autocomplete false; a_onclick js] ()] :: headings
-      else headings in
+      else headings
+    in
     Context.respond_ok ctx [
       form ~a:[a_action "/query"; a_method `Get] [
         ul ~a:[a_class ["query-form"]] [

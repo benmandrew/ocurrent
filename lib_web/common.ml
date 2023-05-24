@@ -12,6 +12,14 @@ let string_param name uri =
   | None | Some "" -> None
   | Some x -> Some x
 
+let nat_param name uri =
+  match Uri.get_query_param uri name with
+  | None | Some "" -> None
+  | Some x ->
+    match int_of_string_opt x with
+    | Some x when x >= 1 -> Some x
+    | _ -> Fmt.failwith "Invalid value %S in %a" x Uri.pp uri
+
 let bool_table ~t ~f = [
   None,       "",      "(any)";
   Some true,  "true",  t;

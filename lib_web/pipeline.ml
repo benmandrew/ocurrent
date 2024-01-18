@@ -21,7 +21,7 @@ let render_svg ctx a =
   Lwt_io.write proc#stdin dotfile >>= fun () ->
   Lwt_io.close proc#stdin >>= fun () ->
   Lwt_io.read proc#stdout >>= fun svg ->
-  proc#status >|= function
+  proc#close >|= function
   | Unix.WEXITED 0 -> Ok svg
   | Unix.WEXITED i -> Fmt.error_msg "dot failed (exit status %d) - is graphviz installed?" i
   | Unix.WSTOPPED i
